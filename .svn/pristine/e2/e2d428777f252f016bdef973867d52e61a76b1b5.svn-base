@@ -1,0 +1,191 @@
+# -*- coding: utf-8 -*-
+import csv
+import json
+from testmodels.models import TestModels
+from testmodels import const
+
+class LangTrans():
+    @classmethod
+    def main(cls):
+        field_trans = [u'コントロールカラム',
+                       u'商品管理番号（商品ID）',
+                       u'商品名',
+                       u'商品名(日)',
+                       u'表示先カテゴリ',
+                       u'表示先カテゴリ(日)',
+                       u'優先度',
+                       u'商品URL',
+                       u'1ページ複数形式',
+                       u'カテゴリセット管理番号',
+                       u'ディレクトリID',
+                       u'カテゴリセット名',
+                       u'カテゴリセット名(日)',
+                       u'ブランド名',
+                       u'ブランド名(日)',
+                       u'販売価格',
+                       u'商品説明文',
+                       u'商品画像URL',
+                       u'色',
+                       u'色(日)',
+                       u'在庫数',
+                       u'選択肢タイプ',
+                       u'タグID']
+
+        field_select = [u'項目選択肢用コントロールカラム',
+                        u'商品管理番号（商品URL）',
+                        u'選択肢タイプ',
+                        u'Select / Checkbox用項目名',
+                        u'Select / Checkbox用選択肢',
+                        u'項目選択肢別在庫用横軸選択肢',
+                        u'項目選択肢別在庫用横軸選択肢子番号',
+                        u'項目選択肢別在庫用縦軸選択肢',
+                        u'項目選択肢別在庫用縦軸選択肢子番号',
+                        u'項目選択肢別在庫用取り寄せ可能表示',
+                        u'項目選択肢別在庫用在庫数',
+                        u'在庫戻しフラグ',
+                        u'在庫切れ時の注文受付',
+                        u'在庫あり時納期管理番号',
+                        u'在庫切れ時納期管理番号',
+                        u'タグID',
+                        u'画像URL']
+
+        tmp = TestModels.get_test2_data()
+        file_name =const.CSV_ITEMS_PRE_NAME + str(tmp[3])
+        fp2 = open(file_name, 'r')
+        fp_trans = open(const.CSV_ITEM_TRANS, 'wb')
+        fp_trans.truncate()
+        # fp_trans.write(u'\ufeff'.encode('utf8'))
+        wr_trans = csv.writer(fp_trans, dialect='excel')
+        wr_trans.writerow([item.encode('shift_jis') for item in field_trans])
+        readCSV = csv.reader(fp2, dialect='excel')
+
+        fp_base_select = open(const.CSV_SELECT_BASE, 'r')
+        fp_select = open(const.CSV_SELECT, 'wb')
+        fp_select.truncate()
+        wr_select = csv.writer(fp_select, dialect='excel')
+        wr_select.writerow([item.encode('shift_jis') for item in field_select])
+        selectBaseCSV = csv.reader(fp_base_select, dialect='excel')
+
+        colorCSV = open(const.CSV_COLOR, 'r')
+        color_reader = csv.reader(colorCSV, delimiter=',')
+        color_data = {}
+        for color_line in color_reader:
+            color_data[color_line[1].upper()] = color_line[2]
+        colorCSV.close()
+
+        brandCSV = open(const.CSV_BRAND, 'r')
+        brand_reader = csv.reader(brandCSV, delimiter=',')
+        brand_data = {}
+        tag_data = {}
+        for brand_line in brand_reader:
+            brand_data[brand_line[1].upper()] = brand_line[2]
+            tag_data[brand_line[1].upper()] = str(brand_line[7])
+        brandCSV.close()
+
+        productCSV = open(const.CSV_PRODUCT, 'r')
+        product_reader = csv.reader(productCSV, delimiter=',')
+        product_data = {}
+        for product_line in product_reader:
+            product_data[product_line[0]] = product_line[2]
+        productCSV.close()
+
+        catCSV = open(const.CSV_CAT, 'r')
+        cat_reader = csv.reader(catCSV, delimiter=',')
+        cat_data = {}
+        dirId_data = {}
+        for cat_line in cat_reader:
+            if cat_line[1].strip():
+                cat_data[cat_line[1]] = cat_line[2]
+                if cat_line[3].strip():
+                    dirId_data[cat_line[1]] = cat_line[3]
+            else:
+                break
+        catCSV.close()
+
+        index = 0
+        for line in readCSV:
+            color_trans = ''
+            brand_trans = ''
+            cat_trans = ''
+            cat_set_trans = ''
+            dirId = ''
+            tag_id = ''
+            index += 1
+            if index == 1:
+                continue
+            # color field translate
+            if line[13].strip():
+                if line[13].upper() in color_data:
+                    color_trans = color_data[line[13].upper()]
+                else:
+                    color_trans = line[13]
+            # brand field translate
+            if line[9].strip():
+                if line[9].upper() in brand_data:
+                    brand_trans = brand_data[line[9].upper()]
+                else:
+                    brand_trans = line[9]
+                if line[9].upper() in tag_data:
+                    tag_id = tag_data[line[9].upper()]
+            # product_name field translate
+            if line[1].strip():
+                if line[1] in product_data:
+                    product_trans = product_data[line[1]]
+                else:
+                    product_trans = line[2]
+
+            if line[3].strip():
+                if line[3] in cat_data:
+                    cat_trans = cat_data[line[3]]
+                    cat_set_trans = cat_trans.split('\\')[0]
+                else:
+                    cat_trans = line[3]
+                    cat_set_trans = cat_trans.split('\\')[0]
+            # set dirId field
+            if line[3].strip():
+                if line[3] in dirId_data:
+                    dirId = dirId_data[line[3]]
+
+            row_trans = [line[0], line[1], line[2], product_trans, line[3], cat_trans, line[4], line[5], line[6], line[7], dirId, line[8], cat_set_trans, line[9], brand_trans, line[10], line[11], line[12], line[13], color_trans, line[14], line[15], tag_id]
+            wr_trans.writerow(row_trans)
+
+        index1 = 0
+        for line1 in selectBaseCSV:
+            color_trans1 = ''
+            index1 += 1
+            if index1 == 1:
+                continue
+            if len(line1) < 17:
+                continue
+            tag_id = ''
+            if line1[15].strip():
+                if line1[15].upper() in tag_data:
+                    tag_id = tag_data[line1[15].upper()]
+            if line1[2] == 'i':
+                # color field translate
+                if line1[7].strip():
+                    if line1[7].upper() in color_data:
+                        color_trans1 = color_data[line1[7].upper()]
+                    else:
+                        color_trans1 = line1[7]
+
+                row_select = [line1[0], line1[1], line1[2], line1[3], line1[4], line1[5], line1[6], color_trans1,
+                              line1[8], line1[9], line1[10], line1[11], line1[12], line1[13], line1[14], tag_id,
+                              line1[16]]
+            else:
+                # color field translate
+                if line1[4].strip():
+                    if line1[4].upper() in color_data:
+                        color_trans1 = color_data[line1[4].upper()]
+                    else:
+                        color_trans1 = line1[4]
+
+                row_select = [line1[0], line1[1], line1[2], line1[3], color_trans1, line1[5], line1[6], line1[7],
+                              line1[8], line1[9], line1[10], line1[11], line1[12], line1[13], line1[14], tag_id,
+                              line1[16]]
+            wr_select.writerow(row_select)
+
+        fp2.close()
+        fp_trans.close()
+        fp_base_select.close()
+        fp_select.close()

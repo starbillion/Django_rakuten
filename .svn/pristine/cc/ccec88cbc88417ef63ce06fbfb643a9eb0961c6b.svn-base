@@ -1,0 +1,107 @@
+# -*- coding: utf-8 -*-
+import csv
+import json
+import time
+from testmodels import const
+
+
+class Generate_CSV():
+    @classmethod
+    def main(cls):
+        field_cat = [u'コントロールカラム',
+                     u'商品管理番号（商品ID）',
+                     u'商品名',
+                     u'表示先カテゴリ',
+                     u'優先度',
+                     u'URL',
+                     u'1ページ複数形式',
+                     u'カテゴリセット管理番号',
+                     u'カテゴリセット名']
+        field_item = [u'コントロールカラム', u'商品管理番号（商品URL）', u'商品番号', u'全商品ディレクトリID', u'タグID',
+                      u'PC用キャッチコピー', u'モバイル用キャッチコピー', u'商品名', u'販売価格', u'表示価格',
+                      u'消費税', u'送料', u'個別送料', u'送料区分1', u'送料区分2',
+                      u'代引料', u'倉庫指定', u'商品情報レイアウト', u'注文ボタン', u'資料請求ボタン',
+                      u'商品問い合わせボタン', u'再入荷お知らせボタン', u'のし対応', u'PC用商品説明文', u'モバイル用商品説明文',
+                      u'スマートフォン用商品説明文', u'PC用販売説明文', u'商品画像URL', u'商品画像名（ALT）', u'動画',
+                      u'販売期間指定', u'注文受付数', u'在庫タイプ', u'在庫数', u'在庫数表示',
+                      u'項目選択肢別在庫用横軸項目名', u'項目選択肢別在庫用縦軸項目名', u'項目選択肢別在庫用残り表示閾値', u'RAC番号', u'サーチ非表示',
+                      u'闇市パスワード', u'カタログID', u'在庫戻しフラグ', u'在庫切れ時の注文受付', u'在庫あり時納期管理番号',
+                      u'在庫切れ時納期管理番号', u'予約商品発売日', u'ポイント変倍率', u'ポイント変倍率適用期間', u'ヘッダー・フッター・レフトナビ',
+                      u'表示項目の並び順', u'共通説明文（小）', u'目玉商品', u'共通説明文（大）', u'レビュー本文表示',
+                      u'あす楽配送管理番号', u'海外配送管理番号', u'サイズ表リンク', u'医薬品説明文', u'医薬品注意事項',
+                      u'二重価格文言管理番号', u'カタログIDなしの理由', u'配送方法セット管理番号', u'白背景画像URL']
+        fp_base = open(const.CSV_ITEM_TRANS, 'r')
+        fp_cat = open(const.CSV_ITEM_CAT, 'wb')
+        fp_item = open(const.CSV_ITEM, 'wb')
+        fp_cat.truncate()
+        fp_item.truncate()
+        # fp_cat.write(u'\ufeff'.encode('utf8'))
+        wr_cat = csv.writer(fp_cat, dialect='excel')
+        wr_cat.writerow([item.encode('shift_jis') for item in field_cat])
+
+        # fp_item.write(u'\ufeff'.encode('utf8'))
+        wr_item = csv.writer(fp_item, dialect='excel')
+        wr_item.writerow([item.encode('shift_jis') for item in field_item])
+        baseCSV = csv.reader(fp_base, dialect='excel')
+
+        index = 0
+        for line in baseCSV:
+            index += 1
+            if index == 1:
+                continue
+            catch_copy = str(line[2]) + ' ' + str(line[3])
+            prod_name = str(line[14]) + ' ' + str(line[5]).replace('\\', ' ') + ' ' + str(line[3]) + ' ' + str(
+                line[13]) + ' ' + str(line[4]).replace('\\', ' ') + ' ' + str(line[2])
+            row_cat = ['n', line[1], prod_name, line[5], line[6], '', 1, line[9], line[12]]
+            wr_cat.writerow(row_cat)
+            prod_des = prod_name + ' <img src="' + line[17] + '"><p><a href="#"></a></p>'
+
+            if line[21] == 'i':
+                row_item = ['n', line[1], 'N-' + line[1], line[10], '',
+                            catch_copy, '', prod_name, line[15].split('.')[0], '',
+                            0, 1, '', '', '',
+                            '', '', 1, '', '',
+                            '', '', '', prod_des + "prod" + str(time.strftime("%Y%m%d")), prod_name,
+                            prod_des, prod_des, line[17], '', '',
+                            '', '', 2, line[20], '',
+                            u'サイズ'.encode('shift_jis'), u'カラー'.encode('shift_jis'), 0, '', 0,
+                            '', '', '', '', '',
+                            '', '', 0, '', '',
+                            '', '', '', '', 0,
+                            '', '', '', '', '',
+                            '', 4, '', '',
+                            ]
+            elif line[21] == 's':
+                row_item = ['n', line[1], 'N-' + line[1], line[10], '',
+                            catch_copy, '', prod_name, line[15].split('.')[0], '',
+                            0, 1, '', '', '',
+                            '', '', 1, '', '',
+                            '', '', '', prod_des + "prod" + str(time.strftime("%Y%m%d")), prod_name,
+                            prod_des, prod_des, line[17], '', '',
+                            '', '', 1, line[20], 0,
+                            '', '', '', '', 0,
+                            '', '', '', '', 4,
+                            5, '', 0, '', '',
+                            '', '', '', '', 0,
+                            '', '', '', '', '',
+                            '', 4, '', '',
+                            ]
+            else:
+                row_item = ['n', line[1], 'N-' + line[1], line[10], '',
+                            catch_copy, '', prod_name, line[15].split('.')[0], '',
+                            0, 1, '', '', '',
+                            '', '', 1, '', '',
+                            '', '', '', prod_des + "prod" + str(time.strftime("%Y%m%d")), prod_name,
+                            prod_des, prod_des, line[17], '', '',
+                            '', '', 1, line[20], 1,
+                            '', '', '', '', 0,
+                            '', '', '', '', 4,
+                            5, '', 0, '', '',
+                            '', '', '', '', 0,
+                            '', '', '', '', '',
+                            '', 4, '', '',
+                            ]
+            wr_item.writerow(row_item)
+        fp_base.close()
+        fp_cat.close()
+        fp_item.close()

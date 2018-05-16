@@ -1,0 +1,42 @@
+﻿웹크롤러데모 프로그람사용설명서(windows용)
+- 이 프로그람에 대하여
+이 프로그람은 쇼핑웹페지의 상품정보를  얻어 csv화일로 보관하는 프로그람이다.
+이 프로그람은 파이썬을 리용하여 만들었다.
+프로그람은 디장고(Django)라이브러리를 리용하여 써버를 구축하였으며 크롤러엔진은 scrapy라이브러리를 리용하였다.
+- 환경설정
+.파이썬2.7설치
+	windows 10 에 python2.7.13을 설치한다.(python-2.7.13.msi)
+.환경변수설정
+	start단추의 오른쪽클릭메뉴창에서 system항목을 클릭한다.
+	Advanced system settings\Environment Variables...에서 System variables의 Path항목을 선택하고 Edit...단추를 클릭한다. 이때 펼쳐지는 창에서 New 단추를 클릭하고 여기에 C:\Python27을 입력하고 또 New단추를 클릭하고C:\Python27\Scripts를 입력하고 OK단추를 클릭한다. 다음 OK단추를 클릭하면서 펼쳐진 창들을 닫는다.
+.라이브러리설치
+건반에서 windows + r를 눌러 펼쳐진 창에 cmd를 입력하고 ok한다
+다음 나오는 창에서 다음의 명령을 입력하고 enter건을 누른다.
+pip install pypiwin32
+그러면 pypiwin32라이브러리가 설치된다
+다음 
+	pip install scrapy
+을 입력하고 enter건을 누르면 scrapy라이브러리가 설치된다.
+같은 방법으로 아래의 명령을 입력하여 Django라이브러리를 설치한다.
+pip install Django==1.11.2 하면 환경설치가 끝난다.
+-프로그람의 실행
+.써버의 실행
+pycharm에서 run을 누르거나
+cmd에서
+다음과 같이 입력한다.
+	python manage.py runserver
+다음 enter건을 누르면 써버가 실행된다.
+.웹페지에서 실행
+브라우저를 열고 (chrome, firefox, ie 등) url입력창에 
+	http://localhost:8000/webcrawling/
+라고 입력한다.
+그러면 웹페지가 현시된다.
+웹페지에 해당한 url이 있다.
+다음 Scraping단추를 클릭하면  해당한 url을 가진 쇼핑웹페지의 상품정보들을 얻어 csv화일로 저장한다.
+csv화일이 저장된 경로는 
+	.\result\item.csv
+이다.
+실행정형을 보려면 cmd창을 보면된다.
+거기에 실행정형이 현시된다.
+실행완료되기전에 끝내려면 건반에서 CTRL + C 누르면 써버가 꺼진다.
+실행이 완료되면 웹페지에 "SUCCESS"라는 알림창이 현시된다.

@@ -1,0 +1,150 @@
+# -*- coding: utf-8 -*-
+
+# Define your item pipelines here
+#
+# Don't forget to add your pipeline to the ITEM_PIPELINES setting
+# See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+
+# Define your item pipelines here
+#
+import scrapy
+from scrapy import log
+from twisted.enterprise import adbapi
+import csv
+from time import gmtime, strftime
+# import MySQLdb.cursors
+from testmodels.models import TestModels
+from testmodels import const
+from scrapy.pipelines.images import ImagesPipeline
+
+# Database storage pipeline. Adapted from Scrapy docs
+# Connects to a MySQL database via a connection pool to allow
+# for non blocking DB access
+
+# class DbPipeline(object):
+#     def __init__(self):
+#         self.dbpool = adbapi.ConnectionPool('MySQLdb',
+#                 host='localhost',
+#                 db='wc_db',
+#                 user='root',
+#                 passwd='',
+#                 cursorclass=MySQLdb.cursors.DictCursor,
+#                 charset='utf8',
+#                 use_unicode=True
+#                 )
+#
+#     def process_item(self,item,spider):
+#         query = self.dbpool.runInteraction(self.__insertdata, item, spider.name)
+#         query.addErrback(self.handle_error)
+#         return item
+#
+#     def __insertdata(self, tx, item, spidername):
+#         if item:
+#             if ('product_count' and 'find_count') in item :
+#                 tx.execute("UPDATE tbl_product_count SET all_product_count=%s, find_product_count=%s where id=%s",
+#                            (item['product_count'],item['find_count'],1))
+#                 log.msg("Item stored in db", level=log.DEBUG)
+#
+#     def handle_error(self, e):
+#         log.err(e)
+class DbSqlitePipeline(object):
+    def __init__(self):
+        """Initialize"""
+        db_name =  const.SQLITE_DB_NAME
+        self.__dbpool = adbapi.ConnectionPool('sqlite3',
+                database= db_name,
+                check_same_thread=False)
+
+    def shutdown(self):
+        """Shutdown the connection pool"""
+        self.__dbpool.close()
+
+    def process_item(self,item,spider):
+        """Process each item process_item"""
+        query = self.__dbpool.runInteraction(self.__insertdata, item, spider)
+        query.addErrback(self.handle_error)
+        return item
+
+    def __insertdata(self,tx,item,spider):
+        """Insert data into the sqlite3 database"""
+        if item:
+            if ('all_product_count' and 'find_product_count' and 'fail_product_count') in item :
+                tx.execute("UPDATE tbl_product_count SET all_product_count=?, find_product_count=?, fail_product_count=? where id=?",
+                           (item['all_product_count'],item['find_product_count'],item['fail_product_count'],1))
+                log.msg("Item stored in db", level=log.DEBUG)
+    def handle_error(self,e):
+        log.err(e)
+
+class CsvWriterPipeline(object):
+
+    def open_spider(self, spider):
+        tmp = TestModels.get_test2_data()
+        find_type =int(tmp[0])
+        if find_type  == const.FIND_INIT:
+            file_date_name = strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + '.csv'
+            # file_name = const.CSV_ITEMS_PRE_NAME + file_date_name
+            # fp=open( file_name, "wb")
+            # fp.truncate()
+            # wr = csv.writer(fp, dialect='excel')
+            # # fp.write(u'\ufeff'.encode('utf8'))
+            # field = [u'コントロールカラム', u'商品管理番号（商品ID）', u'商品名', u'表示先カテゴリ', u'優先度', u'商品URL', u'1ページ複数形式', u'カテゴリセット管理番号',
+            #          u'カテゴリセット名', u'ブランド名', u'販売価格', u'商品説明文', u'商品画像URL', u'色', u'有り高', u'選択肢タイプ']
+            # wr.writerow([elem.encode('shift_jis') for elem in field])
+            # fp.close()
+            #
+            # fp1 = open(const.CSV_SELECT_BASE, "wb")
+            # fp1.truncate()
+            # # fp1.write(u'\ufeff'.encode('utf8'))
+            # wr = csv.writer(fp1, dialect='excel')
+            # field1 = [u'項目選択肢用コントロールカラム', u'商品管理番号（商品URL）', u'選択肢タイプ', u'Select / Checkbox用項目名',
+            #           u'Select / Checkbox用選択肢', u'項目選択肢別在庫用横軸選択肢', u'項目選択肢別在庫用横軸選択肢子番号', u'項目選択肢別在庫用縦軸選択肢',
+            #           u'項目選択肢別在庫用縦軸選択肢子番号', u'項目選択肢別在庫用取り寄せ可能表示', u'項目選択肢別在庫用在庫数', u'在庫戻しフラグ', u'在庫切れ時の注文受付',
+            #           u'在庫あり時納期管理番号', u'在庫切れ時納期管理番号', u'タグID', u'画像URL']
+            # wr.writerow([item.encode('shift_jis') for item in field1])
+            # fp1.close()
+            # TestModels.set_file_name(file_date_name)
+        else:
+            file_date_name = str(tmp[3])
+
+        file_name = const.CSV_ITEMS_TMP_PRE_NAME
+        self.item_fp = open(file_name, "wb")
+        self.item_fp.truncate()
+        self.item_wr = csv.writer(self.item_fp, dialect='excel')
+        log.msg("Open items csv file name " + file_name, level=log.DEBUG)
+
+        self.select_fp = open(const.CSV_TMP_SELECT, "wb")
+        self.select_fp.truncate()
+        self.select_wr = csv.writer(self.select_fp, dialect='excel')
+
+    def process_item(self, item, nfl):
+        # build your row to export, then export the row
+        if item:
+            if ('productId' and 'product_name' and 'category_name' and 'prodURL' and 'categoryId' and 'category_set_name' and 'brand_name' and 'price' and 'prodDescription' and 'prodImgURL' and 'selectedColor' and 'balance' and 'selType') in item:
+                row = ['', item['productId'], item['product_name'], item['category_name'], '', item['prodURL'], '',
+                       item['category_set_num'], item['category_set_name'], item['brand_name'],
+                       item['price'], item['prodDescription'], item['prodImgURL'], item['selectedColor'],
+                       item['balance'], item['selType']]
+                self.item_wr.writerow(row)
+                log.msg("write item in csv file", level=log.DEBUG)
+            if 'select_list' in item:
+                for row in item['select_list']:
+                    self.select_wr.writerow(row)
+                log.msg("write select in csv file", level=log.DEBUG)
+        return item
+
+    def close_spider(self, spider):
+        self.item_fp.close()
+        self.select_fp.close()
+        TestModels.set_find_type(const.FIND_SUCCESS)
+        log.msg("Close items and select csv file", level=log.DEBUG)
+
+class dlImagesPipeline(ImagesPipeline):
+    def get_media_requests(self, item, info):
+        # use 'accession' as name for the image when it's downloaded
+        return [scrapy.Request(x, meta={'image_name': item["productId"]})
+                for x in item.get('image_urls', [])]
+
+    # write in current folder using the name we chose before
+    def file_path(self, request, response=None, info=None):
+        image_name = str(request.meta['image_name'])
+        return '%s.jpg' % image_name

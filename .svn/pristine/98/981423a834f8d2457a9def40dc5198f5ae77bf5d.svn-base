@@ -1,0 +1,69 @@
+# -*- coding: utf-8 -*-
+import csv
+from testmodels import const
+from testmodels.models import TestModels
+from time import gmtime, strftime
+
+class MergeCsv():
+    @classmethod
+    def mycsv_reader(cls,csv_reader):
+        while True:
+            try:
+                yield next(csv_reader)
+            except csv.Error:
+                # error handling what you want.
+                pass
+            continue
+
+    @classmethod
+    def items_merge(cls):
+        tmp = TestModels.get_test2_data()
+        file_date_name = str(tmp[3])
+        items_file_name = const.CSV_ITEMS_PRE_NAME + file_date_name
+        items_file = open(items_file_name, 'ab')
+        writer = csv.writer(items_file, dialect='excel')
+        tmp_items_file_name = const.CSV_ITEMS_TMP_PRE_NAME
+        tmp_items_file = open(tmp_items_file_name, 'rb')
+        reader = cls.mycsv_reader(csv.reader(tmp_items_file, dialect='excel'))
+        for row in reader:
+            writer.writerow(row)
+        tmp_items_file.close()
+        items_file.close()
+    @classmethod
+    def select_merge(cls):
+        select_file = open(const.CSV_SELECT_BASE, 'ab')
+        writer = csv.writer(select_file, dialect='excel')
+        tmp_select_file = open(const.CSV_TMP_SELECT, 'rb')
+        reader = cls.mycsv_reader(csv.reader(tmp_select_file, dialect='excel'))
+        for row in reader:
+            writer.writerow(row)
+        tmp_select_file.close()
+        select_file.close()
+    @classmethod
+    def main(cls):
+        # 초기화
+        file_date_name = strftime("%Y_%m_%d_%H_%M_%S", gmtime()) + '.csv'
+        file_name = const.CSV_ITEMS_PRE_NAME + file_date_name
+        fp = open(file_name, "wb")
+        fp.truncate()
+        wr = csv.writer(fp, dialect='excel')
+        # fp.write(u'\ufeff'.encode('utf8'))
+        field = [u'コントロールカラム', u'商品管理番号（商品ID）', u'商品名', u'表示先カテゴリ', u'優先度', u'商品URL', u'1ページ複数形式', u'カテゴリセット管理番号',
+                 u'カテゴリセット名', u'ブランド名', u'販売価格', u'商品説明文', u'商品画像URL', u'色', u'有り高', u'選択肢タイプ']
+        wr.writerow([elem.encode('shift_jis') for elem in field])
+        fp.close()
+
+        fp1 = open(const.CSV_SELECT_BASE, "wb")
+        fp1.truncate()
+        # fp1.write(u'\ufeff'.encode('utf8'))
+        wr = csv.writer(fp1, dialect='excel')
+        field1 = [u'項目選択肢用コントロールカラム', u'商品管理番号（商品URL）', u'選択肢タイプ', u'Select / Checkbox用項目名',
+                  u'Select / Checkbox用選択肢', u'項目選択肢別在庫用横軸選択肢', u'項目選択肢別在庫用横軸選択肢子番号', u'項目選択肢別在庫用縦軸選択肢',
+                  u'項目選択肢別在庫用縦軸選択肢子番号', u'項目選択肢別在庫用取り寄せ可能表示', u'項目選択肢別在庫用在庫数', u'在庫戻しフラグ', u'在庫切れ時の注文受付',
+                  u'在庫あり時納期管理番号', u'在庫切れ時納期管理番号', u'ブランド名', u'画像URL']
+        wr.writerow([item.encode('shift_jis') for item in field1])
+        fp1.close()
+        TestModels.set_file_name(file_date_name)
+
+        cls.items_merge()
+        cls.select_merge()
